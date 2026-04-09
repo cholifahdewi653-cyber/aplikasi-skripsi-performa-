@@ -1,12 +1,28 @@
 {
   "name": "apk-skripsi",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "server.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "dev": "tsx watch server.ts"
   },
+  "type": "module",
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.5.2",
+    "@types/pg": "^8.20.0",
+    "dotenv": "^17.4.1",
+    "prisma": "^7.7.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "express": "^5.2.1",
+    "pg": "^8.20.0"
+  }
 }
