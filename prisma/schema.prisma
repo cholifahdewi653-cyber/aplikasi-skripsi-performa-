@@ -12,17 +12,207 @@ datasource db {
   provider = "postgresql"
 }
 
+// --- ENUMS ---
+
 enum Role {
   ADMIN
   USER
 }
 
+enum PricingType {
+  FIXED
+  CUSTOM
+}
+
+enum OrderStatus {
+  PENDING
+  ORDERED
+  PACKING
+  SHIPPED
+  COMPLETED
+  RETURNED
+}
+
+// --- MODELS ---
+
 model User {
-  id         String @id @default(cuid())
-  email      String @unique
-  name       String
-  password   String
-  role       Role
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relasi Profil
+  profile   Profile? // Relasi 1:1
+
+  // Relasi Transaksional
+  orders    Order[]
+  cartItems CartItem[]
+  reviews   Review[]
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Data umum
+  phoneNumber String?
+  avatar      String?  // URL foto
+  avatarId    String?  // public_id Cloudinary untuk delete
+
+  // Field Spesifik User (Bisa dikosongkan jika Admin)
+  address     String?  @db.Text
+  city        String?
+  postalCode  String?
+
+  // Field Spesifik Admin (Bisa dikosongkan jika User)
+  adminNotes  String?  // Catatan internal untuk admin
+  department  String?  // Bagian/Departemen admin
+
+  updatedAt   DateTime @updatedAt
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  images      String[]
+  imageIds    String[]
+  description String
+  pricingType PricingType @default(FIXED)
+  basePrice   Int
+  isPublished Boolean     @default(true)
+  isFeatured  Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relasi
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  variants    Variants[]
+  sizes       Size[]
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  reviews     Review[]
+}
+
+model Variants {
+  id          String   @id @default(cuid())
+  productId   String
+  Product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name        String
+  isBase      Boolean  @default(false)
+  priceAdjust Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Size {
+  id          String   @id @default(cuid())
+  productId   String
+  Product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label       String
+  isBase      Boolean  @default(false)
+  priceAdjust Int      @default(0)
+  stock       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(1)
+  
+  // Pilihan varian/size saat di keranjang
+  variantId String?
+  sizeId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  
+  totalAmount     Int
+  status          OrderStatus @default(PENDING)
+  
+  // Tracking & Pengiriman
+  shippingAddress String
+  courierName     String?
+  trackingNumber  String?
+  
+  items           OrderItem[]
+  logs            OrderLog[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  
+  name      String  // Snapshot nama saat dibeli
+  quantity  Int
+  price     Int     // Snapshot harga saat dibeli
+  
+  variantName String?
+  sizeLabel   String?
+  
+  // Relasi ke Review (Satu item pesanan hanya bisa 1x review)
+  review      Review?
+}
+
+model OrderLog {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  note      String?     
+  
+  // Mencatat admin yang mengubah status (opsional)
+  adminId   String?     
+
+  createdAt DateTime    @default(now())
+}
+
+model Review {
+  id          String    @id @default(cuid())
+  rating      Int       // 1-5
+  comment     String?
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  orderItemId String    @unique
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
