@@ -1,460 +1,896 @@
-# 🚀 Aplikasi Skripsi Performa — Setup Guide
+# 🎂 Aplikasi Skripsi Performa — API Documentation
 
-Panduan lengkap untuk melakukan pull, instalasi, menjalankan server, dan testing API menggunakan Postman.
+Panduan lengkap setup, menjalankan server, testing, dan dokumentasi seluruh endpoint API.
 
 ---
 
 ## 📋 Prerequisites
 
-Pastikan kamu sudah menginstall tools berikut sebelum memulai:
-
-- [Node.js](https://nodejs.org/) (v18 atau lebih baru)
-- [npm](https://www.npmjs.com/)
-- [Git](https://git-scm.com/)
-- Database PostgreSQL (lokal atau cloud)
-- Akun [Cloudinary](https://cloudinary.com/) (untuk upload media)
-- [Postman](https://www.postman.com/downloads/) (untuk testing API)
+| Tool                                          | Versi Minimum |
+| --------------------------------------------- | ------------- |
+| [Node.js](https://nodejs.org/)                | v18+          |
+| [npm](https://www.npmjs.com/)                 | v9+           |
+| [Git](https://git-scm.com/)                   | -             |
+| PostgreSQL                                    | v14+          |
+| [Cloudinary](https://cloudinary.com/)         | Akun gratis   |
+| [Postman](https://www.postman.com/downloads/) | Untuk testing |
 
 ---
 
-## 📥 1. Clone / Pull Repository
-
-### Clone pertama kali
+## 📥 Clone & Install
 
 ```bash
+# Clone repository
 git clone https://github.com/cholifahdewi653-cyber/aplikasi-skripsi-performa-.git
 cd aplikasi-skripsi-performa-
-```
 
-### Pull update terbaru (jika sudah pernah clone)
-
-```bash
-git pull origin main
-```
-
----
-
-## 📦 2. Install Dependencies
-
-```bash
+# Install dependencies
 npm install
 ```
 
 ---
 
-## ⚙️ 3. Konfigurasi Environment Variables
+## ⚙️ Konfigurasi Environment
 
-Buat file `.env` di root project, lalu isi dengan konfigurasi berikut:
+Buat file `.env` di root project:
 
 ```dotenv
-# ============================================================
-# DATABASE
-# ============================================================
-# Ganti USER, PASSWORD, PORT, dan DB_NAME sesuai konfigurasi PostgreSQL kamu
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:PORT/DB_NAME"
+# ── Database ──────────────────────────────────────────
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/DB_NAME"
+# Contoh: DATABASE_URL="postgresql://postgres:rahasia@localhost:5432/kue_db"
 
-# Contoh:
-# DATABASE_URL="postgresql://postgres:rahasia123@localhost:5432/mydb"
-
-# ============================================================
-# SERVER
-# ============================================================
+# ── Server ────────────────────────────────────────────
 PORT=3000
 
-# ============================================================
-# JWT
-# ============================================================
-JWT_SECRET="isi_dengan_hasil_generate_di_bawah"
+# ── JWT ───────────────────────────────────────────────
+JWT_SECRET="generate_pakai_perintah_di_bawah"
 
-# ============================================================
-# CLOUDINARY
-# ============================================================
-# Dapatkan kredensial ini dari dashboard Cloudinary kamu:
-# https://cloudinary.com/console
-CLOUDINARY_API_KEY=CLOUDINARY_API_KEY
-CLOUDINARY_API_SECRET=CLOUDINARY_API_SECRET
-CLOUDINARY_NAME=CLOUDINARY_NAME
+# ── Cloudinary ────────────────────────────────────────
+CLOUDINARY_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-> **Cara mendapatkan kredensial Cloudinary:**
->
-> 1. Daftar / login di [cloudinary.com](https://cloudinary.com)
-> 2. Buka **Dashboard**
-> 3. Salin nilai **Cloud Name**, **API Key**, dan **API Secret**
-
----
-
-## 🔑 4. Generate JWT Secret via CLI (Node.js Crypto)
-
-Buka terminal, jalankan perintah berikut:
+**Generate JWT Secret:**
 
 ```bash
 node -e "const crypto = require('crypto'); console.log(crypto.randomBytes(64).toString('hex'));"
 ```
 
-Output-nya berupa string panjang seperti ini:
-
-```
-a3f1c2e4b9d76f3a1c2e4b9d76f3a1c2e4b9d76f3a1c2e4b9d76f3a1c2e4b9d7...
-```
-
-Salin output tersebut, lalu tempel ke `.env`:
-
-```dotenv
-JWT_SECRET="a3f1c2e4b9d7..."
-```
-
-> ⚠️ Jangan pernah pakai JWT secret yang pendek atau mudah ditebak di production.
-
 ---
 
-## 🗄️ 5. Setup Database dengan Prisma
-
-### Generate Prisma Client
+## 🗄️ Setup Database
 
 ```bash
+# Generate Prisma Client
 npx prisma generate
-```
 
-### Jalankan Migrasi Database
-
-```bash
+# Jalankan migrasi
 npx prisma migrate dev
-```
 
-> Perintah ini akan membuat tabel-tabel di database sesuai skema Prisma.
+# (Opsional) Seed data awal
+npm run seed
 
-### (Opsional) Lihat isi database via Prisma Studio
-
-```bash
+# (Opsional) Buka GUI database
 npx prisma studio
 ```
 
 ---
 
-## ▶️ 6. Menjalankan Aplikasi
-
-### Mode Development (dengan auto-reload)
+## ▶️ Menjalankan Server
 
 ```bash
+# Development (auto-reload)
 npm run dev
-```
 
-### Mode Production
-
-```bash
+# Production
 npm start
 ```
 
-Server akan berjalan di: **http://localhost:3000** (atau sesuai `PORT` di `.env`)
+Server berjalan di: **`http://localhost:3000`**
 
 ---
 
-## 🧪 Quick Start — Semua Langkah Sekaligus
+## 🧪 Menjalankan Test
 
 ```bash
-# 1. Clone repo
-git clone https://github.com/cholifahdewi653-cyber/aplikasi-skripsi-performa-.git
-cd aplikasi-skripsi-performa-
-
-# 2. Install dependencies
-npm install
-
-# 3. Generate JWT Secret (salin outputnya ke .env)
-node -e "const crypto = require('crypto'); console.log(crypto.randomBytes(64).toString('hex'));"
-
-# 4. Buat file .env dan isi semua konfigurasi (lihat bagian di atas)
-
-# 5. Setup database
-npx prisma generate
-npx prisma migrate dev
-
-# 6. Jalankan server
-npm run dev
+npm test
 ```
+
+Output test menampilkan setiap skenario dengan ✅ (sukses) atau ❌ (error yang diharapkan) beserta data response JSON yang terformat rapi.
+
+```
+▶ UC-AUTH-01: Register user baru berhasil → 201
+✅ UC-AUTH-01 Register baru   201
+────────────────────────────────────────────────────────────
+{
+  "status": "success",
+  "data": {
+    "id": "cmp...",
+    "name": "Test User",
+    "email": "test@example.com",
+    "role": "USER"
+  }
+}
+```
+
+**Coverage: 59 test case, 8 suite (Auth, Product, Cart, Custom Cake, Order, Profile, Review, Dashboard)**
 
 ---
 
 ## 🗺️ API Routes Overview
 
-Server berjalan di `http://localhost:3000`. Berikut daftar base route yang tersedia:
+| Base Route                                       | Keterangan          | Auth       |
+| ------------------------------------------------ | ------------------- | ---------- |
+| `POST /api/auth/register`                        | Daftar akun baru    | Public     |
+| `POST /api/auth/login`                           | Login               | Public     |
+| `POST /api/auth/logout`                          | Logout              | User/Admin |
+| `GET /api/auth/me`                               | Data diri           | User/Admin |
+| `GET /api/products`                              | Daftar produk       | Public     |
+| `POST /api/products`                             | Buat produk         | Admin      |
+| `PATCH /api/products/:id`                        | Update produk       | Admin      |
+| `DELETE /api/products/:id`                       | Hapus produk        | Admin      |
+| `GET /api/cart`                                  | Lihat keranjang     | User       |
+| `POST /api/cart`                                 | Tambah ke keranjang | User       |
+| `DELETE /api/cart/:id`                           | Hapus item cart     | User       |
+| `POST /api/order/checkout`                       | Checkout            | User       |
+| `GET /api/order/my-orders`                       | Riwayat pesanan     | User       |
+| `GET /api/order/detail/:id`                      | Detail pesanan      | User/Admin/Owner |
+| `GET /api/order/admin/all`                       | Semua pesanan       | Admin      |
+| `PATCH /api/order/admin/:id/verify`              | Verifikasi pesanan  | Admin      |
+| `PATCH /api/order/admin/:id/ship`                | Kirim pesanan       | Admin      |
+| `POST /api/order/admin/:id/proof-delivery`       | Upload bukti kirim  | Admin      |
+| `PATCH /api/order/admin/:id/confirm-arrival`     | Konfirmasi sampai   | Admin      |
+| `PATCH /api/order/admin/requests/:id/resolve`    | Resolve cancel      | Admin      |
+| `POST /api/order/my-orders/:id/payment-proof`    | Upload bukti bayar  | User       |
+| `PATCH /api/order/my-orders/:id/edit-payment`    | Edit pembayaran     | User       |
+| `POST /api/order/my-orders/:id/cancel`           | Ajukan cancel       | User       |
+| `POST /api/order/my-orders/:id/reorder`          | Beli lagi           | User       |
+| `GET /api/custom-cakes/all-options`              | Semua opsi kustom   | Public     |
+| `POST /api/custom-cakes/order`                   | Pesan custom cake   | User       |
+| `GET /api/custom-cakes/order/:id`                | Detail custom cake  | User       |
+| `POST /api/custom-cakes/options/:category`       | Buat opsi           | Admin      |
+| `GET /api/custom-cakes/options/:category`        | List opsi           | Admin      |
+| `PATCH /api/custom-cakes/options/:category/:id`  | Update opsi         | Admin      |
+| `DELETE /api/custom-cakes/options/:category/:id` | Hapus opsi          | Admin      |
+| `PATCH /api/profile/update-profile`              | Update profil       | User/Admin |
+| `POST /api/reviews`                              | Buat review         | User       |
+| `GET /api/reviews/product/:productId`            | Review produk       | Public     |
 
-| Base Route            | Keterangan                            |
-| --------------------- | ------------------------------------- |
-| `/api/auth/...`       | Autentikasi (register, login, logout) |
-| `/api/products/...`   | Manajemen produk                      |
-| `/api/categories/...` | Manajemen kategori                    |
-| `/api/profile/...`    | Profil pengguna                       |
-| `/api/cart/...`       | Keranjang belanja                     |
-| `/api/order/...`      | Manajemen order                       |
-
-> 📂 Detail lengkap setiap endpoint bisa dilihat di folder `src/routes/`.
-
----
-
-## 📬 Testing API dengan Postman
-
-### A. Membuat Akun & Install Postman
-
-1. Buka [postman.com](https://www.postman.com/) → klik **Sign Up**
-2. Daftar menggunakan email atau akun Google
-3. Download & install **Postman Desktop** dari [postman.com/downloads](https://www.postman.com/downloads/)
-4. Buka aplikasi Postman → login dengan akun yang baru dibuat
-
-### B. Membuat Collection Baru
-
-1. Di sidebar kiri → klik **Collections**
-2. Klik tombol **+** → pilih **Blank Collection**
-3. Beri nama: `Aplikasi Skripsi Performa`
-4. Tekan **Enter** untuk menyimpan
-
-### C. Cara Membuat & Menjalankan Request
-
-Untuk setiap endpoint di bawah, ikuti langkah ini:
-
-1. Klik tombol **+** (New Tab) di area utama Postman
-2. Pilih **HTTP method** (POST, GET, dll) di dropdown kiri
-3. Masukkan **URL** di kolom address bar
-4. Buka tab **Body** → pilih **raw** → ubah format ke **JSON**
-5. Paste **body JSON** sesuai contoh di bawah
-6. Klik tombol **Send** (biru)
-7. Lihat response di panel bawah
+> 🍪 **Auth via httpOnly Cookie** — setelah login, token tersimpan otomatis di cookie. Postman mengirimnya otomatis tanpa konfigurasi manual.
 
 ---
 
-## 👤 Contoh Request Auth
+## 👤 AUTH
 
-> 🍪 **Catatan penting — httpOnly Cookie:**
-> Aplikasi ini menggunakan **httpOnly cookie** untuk menyimpan token JWT, bukan melalui response body. Ini lebih aman karena cookie tidak dapat diakses oleh JavaScript di sisi client.
->
-> **Cara kerja di Postman:**
->
-> - Setelah login berhasil, server otomatis mengirim cookie `token` ke browser / Postman.
-> - Postman akan **menyimpan dan mengirim ulang cookie secara otomatis** pada request berikutnya selama session masih aktif.
-> - Kamu **tidak perlu** menyalin token secara manual — cukup pastikan fitur **Cookie Jar** di Postman aktif (aktif by default).
->
-> ✅ Tidak perlu lagi set `Authorization: Bearer <token>` secara manual di setiap request.
+### Register
 
----
-
-### 1. Register Admin
-
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/auth/register`
-- **Body (JSON):**
+**`POST /api/auth/register`** — Public
 
 ```json
 {
-  "name": "admin_test",
-  "email": "adminTest@gmail.com",
-  "password": "admin12345",
-  "confirmPassword": "admin12345",
-  "role": "ADMIN"
+  "name": "Siti Cholifah",
+  "email": "siti@example.com",
+  "password": "password123",
+  "confirmPassword": "password123"
+}
+```
+
+**Response 201:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "cmp1abc2def3",
+    "name": "Siti Cholifah",
+    "email": "siti@example.com",
+    "role": "USER",
+    "createdAt": "2026-07-19T05:00:00.000Z"
+  }
 }
 ```
 
 ---
 
-### 2. Register User
+### Login
 
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/auth/register`
-- **Body (JSON):**
+**`POST /api/auth/login`** — Public
 
 ```json
 {
-  "name": "user_test",
-  "email": "userTest@gmail.com",
-  "password": "user12345",
-  "confirmPassword": "user12345"
+  "identifier": "siti@example.com",
+  "password": "password123"
+}
+```
+
+> `identifier` bisa berupa **email** atau **username**.
+
+**Response 200:**
+
+```json
+{
+  "status": "success",
+  "message": "Login berhasil",
+  "data": {
+    "id": "cmp1abc2def3",
+    "name": "Siti Cholifah",
+    "role": "USER"
+  }
+}
+```
+
+> Cookie `tokenUser` (atau `tokenAdmin` untuk admin) otomatis di-set oleh server.
+
+---
+
+### Get Me
+
+**`GET /api/auth/me`** — User / Admin
+
+**Response 200:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "cmp1abc2def3",
+    "name": "Siti Cholifah",
+    "email": "siti@example.com",
+    "role": "USER",
+    "phoneNumber": "081234567890",
+    "address": "Jl. Merdeka No. 1",
+    "city": "Purwokerto",
+    "postalCode": "53111"
+  }
 }
 ```
 
 ---
 
-### 3. Login Admin
+### Logout
 
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/auth/login`
-- **Body (JSON):**
+**`POST /api/auth/logout`** — User / Admin
 
-```json
-{
-  "email": "adminTest@gmail.com",
-  "password": "admin12345"
-}
-```
-
-> ✅ Setelah login berhasil, server akan mengirimkan **httpOnly cookie** yang berisi token JWT. Postman menyimpannya otomatis — request selanjutnya sudah terautentikasi tanpa perlu setting manual.
-
----
-
-### 4. Login User
-
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/auth/login`
-- **Body (JSON):**
+**Response 200:**
 
 ```json
 {
-  "email": "userTest@gmail.com",
-  "password": "user12345"
+  "status": "success",
+  "message": "Logout berhasil"
 }
 ```
 
 ---
 
-### D. Autentikasi di Request Selanjutnya (httpOnly Cookie)
+## 👤 PROFILE
 
-Karena token disimpan di **httpOnly cookie**, Postman secara otomatis menyertakannya di setiap request berikutnya. **Kamu tidak perlu melakukan setting apapun** selama cookie belum expired dan kamu menggunakan session Postman yang sama.
+### Update Profil
 
-> 💡 Jika ingin memastikan cookie aktif: buka **Postman → Cookies** (pojok kanan atas area request) dan cari cookie `token` untuk domain `localhost`.
+**`PATCH /api/profile/update-profile`** — User / Admin  
+Content-Type: `multipart/form-data`
 
----
+| Field          | Tipe                      | Keterangan             |
+| -------------- | ------------------------- | ---------------------- |
+| `name`         | string                    | Nama lengkap           |
+| `phoneNumber`  | string                    | Nomor HP               |
+| `address`      | string                    | Alamat lengkap         |
+| `city`         | string                    | Kota                   |
+| `postalCode`   | string                    | Kode pos               |
+| `jenisKelamin` | `LAKI_LAKI` / `PEREMPUAN` | Jenis kelamin          |
+| `foto`         | file (jpg/png)            | Foto profil (opsional) |
+| `department`   | string                    | Khusus Admin           |
+| `adminNotes`   | string                    | Khusus Admin           |
 
-## 👤 Contoh Request Profile
+> Semua field **opsional** — kirim hanya field yang ingin diperbarui.
 
-### 1. Get My Profile (Get Me)
-
-Endpoint ini digunakan untuk mengambil data profil pengguna yang sedang login.
-
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/profile/me`
-- **Authorization:** httpOnly Cookie (otomatis)
-- **Body:** tidak diperlukan
-
----
-
-### 2. Update Profile
-
-Endpoint ini digunakan untuk memperbarui data profil pengguna yang sedang login.
-
-- **Method:** `PUT`
-- **URL:** `http://localhost:3000/api/profile/me`
-- **Authorization:** httpOnly Cookie (otomatis)
-- **Body (JSON):**
+**Response 200:**
 
 ```json
 {
-  "name": "user1_update",
-  "phoneNumber": "0887772890",
-  "address": "test_1",
-  "city": "test_1",
-  "postalCode": "54261",
-  "image": "https://images.unsplash.com/photo-1768405942784-0d48a1f44fe7?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw1fHx8ZW58MHx8fHx8"
+  "status": "success",
+  "data": {
+    "id": "cmp1abc2def3",
+    "name": "Siti Cholifah",
+    "phoneNumber": "081234567890",
+    "address": "Jl. Merdeka No. 1",
+    "city": "Purwokerto",
+    "postalCode": "53111",
+    "jenisKelamin": "PEREMPUAN"
+  }
 }
 ```
 
-> 💡 Semua field bersifat opsional — kamu bisa mengirim hanya field yang ingin diperbarui.
-
 ---
 
-## 🛒 Contoh Request Products
+## 🛍️ PRODUCTS
 
-> 📌 **Ringkasan Akses:**
->
-> | Endpoint       | Admin | User |
-> | -------------- | :---: | :--: |
-> | Get All        |  ✅   |  ✅  |
-> | Get One by ID  |  ✅   |  ✅  |
-> | Create Product |  ✅   |  ❌  |
-> | Update Product |  ✅   |  ❌  |
-> | Delete Product |  ✅   |  ❌  |
+### Get All Products
 
----
+**`GET /api/products`** — Public
 
-### 1. Get All Products
+Query params (opsional): `?category=KECIL&search=cokelat`
 
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/products/`
-- **Authorization:** httpOnly Cookie (otomatis)
-- **Body:** tidak diperlukan
-
----
-
-### 2. Get One Product by ID
-
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/products/cmoh6gusm0008ewu1eqkezcfs`
-- **Authorization:** httpOnly Cookie (otomatis)
-- **Body:** tidak diperlukan
-
-> 💡 Ganti `cmoh6gusm0008ewu1eqkezcfs` dengan ID produk yang ingin dilihat.
-
----
-
-### 3. Create Product — CUSTOM Pricing _(Admin only)_
-
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/products/`
-- **Authorization:** httpOnly Cookie **Admin** (otomatis)
-- **Body (JSON):**
+**Response 200:**
 
 ```json
 {
-  "name": "Kue Ultah Custom",
-  "slug": "kue-ultah-custom",
-  "description": "Kue custom pilih rasa dan ukuran sendiri",
-  "categoryId": "cmoh6cmpm0000ewu1eles6m51",
-  "pricingType": "CUSTOM",
-  "basePrice": 50000,
-  "isPublished": true,
-  "isFeatured": false,
-  "images": [
-    "https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y2FrZXxlbnwwfHwwfHx8MA%3D%3D"
-  ],
-  "variants": [
-    { "name": "Coklat", "isBase": true, "priceAdjust": 0 },
-    { "name": "Vanilla", "isBase": false, "priceAdjust": 5000 },
-    { "name": "Keju", "isBase": false, "priceAdjust": 8000 }
-  ],
-  "sizes": [
-    { "label": "16", "isBase": true, "priceAdjust": 0, "stock": 10 },
-    { "label": "20", "isBase": false, "priceAdjust": 15000, "stock": 8 },
-    { "label": "24", "isBase": false, "priceAdjust": 30000, "stock": 5 }
+  "status": "success",
+  "data": [
+    {
+      "id": "cmp1abc2def3",
+      "name": "Kue Ultah Cokelat",
+      "slug": "kue-ultah-cokelat",
+      "basePrice": 75000,
+      "category": "KECIL",
+      "stockType": "READY_STOCK",
+      "images": ["https://res.cloudinary.com/..."],
+      "variants": ["Cokelat", "Vanilla"],
+      "isPublished": true
+    }
   ]
 }
 ```
 
 ---
 
-### 4. Create Product — FIXED Pricing _(Admin only)_
+### Get One Product
 
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/products/`
-- **Authorization:** httpOnly Cookie **Admin** (otomatis)
-- **Body (JSON):**
+**`GET /api/products/:id`** — Public
+
+Gunakan ID atau slug produk.
+
+```
+GET /api/products/kue-ultah-cokelat
+GET /api/products/cmp1abc2def3
+```
+
+---
+
+### Create Product _(Admin only)_
+
+**`POST /api/products`** — Admin  
+Content-Type: `multipart/form-data`
+
+| Field         | Tipe                      | Wajib | Keterangan               |
+| ------------- | ------------------------- | :---: | ------------------------ |
+| `name`        | string                    |  ✅   | Nama produk              |
+| `description` | string                    |  ✅   | Deskripsi                |
+| `basePrice`   | number                    |  ✅   | Harga dasar              |
+| `category`    | `KECIL`/`BESAR`/`PREMIUM` |  ✅   | Kategori                 |
+| `stock`       | `ready`/`preorder`        |  ✅   | Jenis stok               |
+| `variantRasa` | string                    |   -   | Varian rasa (pisah koma) |
+| `sizes`       | JSON string               |   -   | Array ukuran & harga     |
+| `images`      | file/URL                  |   -   | Gambar produk            |
+
+**Contoh body:**
+
+```
+name          = Kue Ulang Tahun Strawberry
+description   = Kue segar dengan topping strawberry segar
+basePrice     = 85000
+category      = KECIL
+stock         = ready
+variantRasa   = Strawberry
+sizes         = [{"name":"Loyang 16cm","price":85000},{"name":"Loyang 20cm","price":110000}]
+images        = [file upload atau URL]
+```
+
+**Response 201:**
 
 ```json
 {
-  "name": "Kue Lapis Legit Premium",
-  "slug": "kue-lapis-legit-premium",
-  "description": "Kue lapis legit tradisional dengan mentega wisman asli. Tekstur lembut dan wangi.",
-  "categoryId": "cmoh6cmpm0000ewu1eles6m51",
-  "pricingType": "FIXED",
-  "basePrice": 150000,
-  "isPublished": true,
-  "isFeatured": true,
-  "images": [
-    "https://images.unsplash.com/photo-1768321139994-81a8e8862f5e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw0fHx8ZW58MHx8fHx8"
-  ],
-  "variants": [
-    { "name": "Original (Polos)", "isBase": true, "priceAdjust": 0 },
-    { "name": "Keju Kraft", "isBase": false, "priceAdjust": 25000 },
-    { "name": "Prunes (Selingan)", "isBase": false, "priceAdjust": 35000 }
-  ],
-  "sizes": [
-    {
-      "label": "Setengah Loyang (10x20)",
-      "isBase": true,
-      "priceAdjust": 0,
-      "stock": 20
+  "status": "success",
+  "data": {
+    "id": "cmp1abc2def3",
+    "name": "Kue Ulang Tahun Strawberry",
+    "slug": "kue-ulang-tahun-strawberry",
+    "basePrice": 85000,
+    "category": "KECIL"
+  }
+}
+```
+
+---
+
+### Update Product _(Admin only)_
+
+**`PATCH /api/products/:id`** — Admin  
+Content-Type: `multipart/form-data`
+
+Field sama seperti Create, semua opsional.
+
+---
+
+### Delete Product _(Admin only)_
+
+**`DELETE /api/products/:id`** — Admin
+
+**Response 200:**
+
+```json
+{
+  "status": "success",
+  "message": "Produk berhasil dihapus"
+}
+```
+
+---
+
+## 🎂 CUSTOM CAKE
+
+### Get All Options (Form Kustomisasi)
+
+**`GET /api/custom-cakes/all-options`** — Public
+
+**Response 200:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "baseCakes": [
+      { "id": "cmp1...", "name": "Vanilla Sponge", "price": 50000 }
+    ],
+    "tipeCreams": [
+      { "id": "cmp2...", "name": "Whipped Cream", "price": 15000 }
+    ],
+    "warnaCreams": [
+      {
+        "id": "cmp3...",
+        "name": "Merah Muda",
+        "warna": "Pink",
+        "hex": "#FFB6C1",
+        "price": 10000
+      }
+    ],
+    "layers": [{ "id": "cmp4...", "name": "Layer Cokelat", "price": 20000 }],
+    "sizes": [{ "id": "cmp5...", "name": "20cm Round", "price": 5000 }]
+  }
+}
+```
+
+---
+
+### Order Custom Cake
+
+**`POST /api/custom-cakes/order`** — User  
+Content-Type: `multipart/form-data`
+
+| Field          | Tipe           | Wajib | Keterangan                                                     |
+| -------------- | -------------- | :---: | -------------------------------------------------------------- |
+| `baseCakeId`   | string         |  ✅   | ID base cake                                                   |
+| `tipeCreamId`  | string         |  ✅   | ID tipe krim                                                   |
+| `warnaCreamId` | string         |  ✅   | ID warna krim                                                  |
+| `layers`       | JSON string    |  ✅   | Array layer: `[{"layerId":"...","sizeId":"...","position":1}]` |
+| `ucapan`       | string         |   -   | Tulisan di kue                                                 |
+| `catatan`      | string         |   -   | Catatan tambahan                                               |
+| `foto`         | file (jpg/png) |   -   | Foto referensi desain                                          |
+
+**Contoh body:**
+
+```
+baseCakeId    = cmp1abc2def3
+tipeCreamId   = cmp2abc2def3
+warnaCreamId  = cmp3abc2def3
+layers        = [{"layerId":"cmp4abc","sizeId":"cmp5abc","position":1}]
+ucapan        = Selamat Ulang Tahun Bunda!
+catatan       = Tolong dibuat manis dan pakai lilin 25
+foto          = [file upload referensi desain]
+```
+
+**Response 201:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "cmp9xyz...",
+    "status": "PENDING",
+    "totalPrice": 100000,
+    "ucapan": "Selamat Ulang Tahun Bunda!",
+    "baseCake": { "name": "Vanilla Sponge", "price": 50000 },
+    "tipeCream": { "name": "Whipped Cream", "price": 15000 }
+  }
+}
+```
+
+---
+
+### Get Detail Custom Cake
+
+**`GET /api/custom-cakes/order/:id`** — User
+
+---
+
+### Admin: CRUD Opsi Custom Cake
+
+**Category** yang tersedia: `base-cake` | `tipe-cream` | `warna-cream` | `layer` | `size`
+
+```
+POST   /api/custom-cakes/options/:category          → Create opsi
+GET    /api/custom-cakes/options/:category          → List semua opsi
+GET    /api/custom-cakes/options/:category/:id      → Detail satu opsi
+PATCH  /api/custom-cakes/options/:category/:id      → Update opsi
+DELETE /api/custom-cakes/options/:category/:id      → Hapus opsi
+```
+
+**Contoh Create BaseCake:**
+
+**`POST /api/custom-cakes/options/base-cake`** — Admin
+
+```json
+{
+  "name": "Chocolate Sponge",
+  "price": 60000
+}
+```
+
+**Contoh Create WarnaCream:**
+
+**`POST /api/custom-cakes/options/warna-cream`** — Admin
+
+```json
+{
+  "name": "Biru Muda",
+  "warna": "Biru",
+  "hex": "#ADD8E6",
+  "price": 12000
+}
+```
+
+---
+
+## 🛒 CART
+
+### Get Cart
+
+**`GET /api/cart`** — User
+
+**Response 200:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "cart_cmp1...",
+    "cartItems": [
+      {
+        "id": "item_cmp1...",
+        "productId": "prod_cmp1...",
+        "qty": 2,
+        "rasa": "Cokelat",
+        "type": "PRODUCT",
+        "product": {
+          "name": "Kue Ultah Cokelat",
+          "basePrice": 75000
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+### Add to Cart
+
+**`POST /api/cart`** — User
+
+```json
+{
+  "productId": "cmp1abc2def3",
+  "qty": 2,
+  "type": "PRODUCT",
+  "rasa": "Cokelat"
+}
+```
+
+> `type` bisa `PRODUCT` atau `CUSTOM_CAKE`
+
+**Response 201:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "item_cmp1...",
+    "productId": "cmp1abc2def3",
+    "qty": 2,
+    "rasa": "Cokelat",
+    "type": "PRODUCT"
+  }
+}
+```
+
+---
+
+### Delete Cart Item
+
+**`DELETE /api/cart/:id`** — User
+
+```
+DELETE /api/cart/item_cmp1abc2def3
+```
+
+---
+
+## 📦 ORDER
+
+### Checkout
+
+**`POST /api/order/checkout`** — User
+
+```json
+{
+  "cartItemIds": ["item_cmp1abc", "item_cmp2def"],
+  "paymentMethod": "TRANSFER",
+  "bank": "BCA",
+  "deliveryDate": "2026-08-01T10:00:00.000Z",
+  "recipientName": "Siti Cholifah",
+  "phoneNumber": "081234567890",
+  "address": "Jl. Merdeka No. 1",
+  "city": "Purwokerto",
+  "postalCode": "53111"
+}
+```
+
+| `paymentMethod` | `bank` wajib?                    |
+| --------------- | -------------------------------- |
+| `COD`           | ❌                               |
+| `TRANSFER`      | ✅ (BCA, BNI, BRI, MANDIRI, dll) |
+
+**Response 201:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "ord_cmp1...",
+    "orderNumber": "ORD-2026-001",
+    "status": "PENDING",
+    "paymentStatus": "UNPAID",
+    "paymentMethod": "TRANSFER",
+    "bank": "BCA",
+    "subtotal": 150000,
+    "adminFee": 5000,
+    "totalAmount": 155000,
+    "deliveryDate": "2026-08-01T10:00:00.000Z",
+    "items": [...]
+  }
+}
+```
+
+---
+
+### Get My Orders
+
+**`GET /api/order/my-orders`** — User
+
+---
+
+### Get Order Detail (Rincian Pesanan)
+
+**`GET /api/order/detail/:id`** — User / Admin / Owner
+
+Mendapatkan informasi detail rincian pesanan berdasarkan ID. 
+- Jika diakses oleh **USER**, hanya bisa melihat pesanan miliknya sendiri (lainnya akan mengembalikan `403 Forbidden`).
+- Jika diakses oleh **ADMIN** atau **OWNER**, dapat melihat rincian pesanan siapapun.
+
+**Response 200:**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "ord_cmp1...",
+    "orderNumber": "ORD-2026-001",
+    "status": "PROCESSING",
+    "paymentStatus": "UNPAID",
+    "recipientName": "Siti Cholifah",
+    "phoneNumber": "081234567890",
+    "address": "Jl. Merdeka No. 1",
+    "city": "Purwokerto",
+    "postalCode": "53111",
+    "paymentMethod": "TRANSFER",
+    "bank": "BCA",
+    "subtotal": 150000,
+    "adminFee": 2500,
+    "totalAmount": 152500,
+    "user": {
+      "id": "usr_123",
+      "name": "Siti Cholifah",
+      "email": "siti@example.com"
     },
+    "items": [
+      {
+        "id": "item_123",
+        "type": "PRODUCT",
+        "nameSnapshot": "Kue Ultah Cokelat",
+        "priceSnapshot": 75000,
+        "qty": 2,
+        "product": {
+          "id": "prod_123",
+          "name": "Kue Ultah Cokelat",
+          "basePrice": 75000
+        }
+      }
+    ],
+    "trackings": [],
+    "paymentSubmissions": [],
+    "requests": []
+  }
+}
+```
+
+---
+
+### Upload Bukti Pembayaran
+
+**`POST /api/order/my-orders/:id/payment-proof`** — User  
+Content-Type: `multipart/form-data`
+
+| Field   | Tipe           | Keterangan          |
+| ------- | -------------- | ------------------- |
+| `bukti` | file (jpg/png) | Foto bukti transfer |
+
+---
+
+### Edit Metode Pembayaran
+
+**`PATCH /api/order/my-orders/:id/edit-payment`** — User
+
+```json
+{
+  "paymentMethod": "TRANSFER",
+  "bank": "BNI"
+}
+```
+
+---
+
+### Ajukan Pembatalan
+
+**`POST /api/order/my-orders/:id/cancel`** — User  
+_(Maksimal 3 kali per order)_
+
+```json
+{
+  "reason": "Berubah pikiran, tidak jadi beli"
+}
+```
+
+**Response 201:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "req_cmp1...",
+    "orderId": "ord_cmp1...",
+    "reason": "Berubah pikiran, tidak jadi beli",
+    "status": "PENDING"
+  }
+}
+```
+
+---
+
+### Beli Lagi (Reorder)
+
+**`POST /api/order/my-orders/:id/reorder`** — User  
+_(Hanya untuk order berstatus COMPLETED)_
+
+**Response 200:**
+
+```json
+{
+  "status": "success",
+  "message": "Item berhasil ditambahkan ke keranjang",
+  "data": {
+    "addedItems": 2,
+    "cartId": "cart_cmp1..."
+  }
+}
+```
+
+---
+
+### Admin: Get All Orders
+
+**`GET /api/order/admin/all`** — Admin
+
+---
+
+### Admin: Verifikasi Pesanan
+
+**`PATCH /api/order/admin/:id/verify`** — Admin
+
+```json
+{
+  "action": "APPROVE"
+}
+```
+
+> `action`: `APPROVE` (terima) atau `REJECT` (tolak)
+
+---
+
+### Admin: Kirim Pesanan
+
+**`PATCH /api/order/admin/:id/ship`** — Admin
+
+```json
+{
+  "courier": "JNE",
+  "trackingNumber": "JNE1234567890"
+}
+```
+
+---
+
+### Admin: Upload Bukti Pengiriman
+
+**`POST /api/order/admin/:id/proof-delivery`** — Admin  
+Content-Type: `multipart/form-data`
+
+| Field  | Tipe           | Keterangan              |
+| ------ | -------------- | ----------------------- |
+| `foto` | file (jpg/png) | Foto bukti paket sampai |
+
+---
+
+### Admin: Konfirmasi Pesanan Sampai
+
+**`PATCH /api/order/admin/:id/confirm-arrival`** — Admin
+
+Body kosong atau:
+
+```json
+{
+  "note": "Paket diterima oleh penerima langsung"
+}
+```
+
+---
+
+### Admin: Resolve Cancel Request
+
+**`PATCH /api/order/admin/requests/:requestId/resolve`** — Admin
+
+```json
+{
+  "action": "APPROVE",
+  "settlementType": "REFUND",
+  "adminNote": "Pembatalan disetujui, dana dikembalikan dalam 3 hari kerja"
+}
+```
+
+| Field            | Nilai                        |
+| ---------------- | ---------------------------- |
+| `action`         | `APPROVE` / `REJECT`         |
+| `settlementType` | `REFUND` / `CREDIT` / `NONE` |
+
+---
+
+## ⭐ REVIEW
+
+### Get Reviews Produk
+
+**`GET /api/reviews/product/:productId`** — Public
+
+**Response 200:**
+
+```json
+{
+  "status": "success",
+  "data": [
     {
-      "label": "Satu Loyang (20x20)",
-      "isBase": false,
-      "priceAdjust": 140000,
-      "stock": 15
+      "id": "rev_cmp1...",
+      "rating": 5,
+      "comment": "Kuenya enak banget dan cantik!",
+      "foto": "https://res.cloudinary.com/...",
+      "user": { "name": "Siti Cholifah" },
+      "createdAt": "2026-07-19T05:00:00.000Z"
     }
   ]
 }
@@ -462,338 +898,293 @@ Endpoint ini digunakan untuk memperbarui data profil pengguna yang sedang login.
 
 ---
 
-### 5. Update Product _(Admin only)_
+### Buat Review
 
-- **Method:** `PUT`
-- **URL:** `http://localhost:3000/api/products/:id`
-- **Authorization:** httpOnly Cookie **Admin** (otomatis)
-- **Body (JSON):**
+**`POST /api/reviews`** — User  
+Content-Type: `multipart/form-data`
+
+> Hanya bisa review item dari order berstatus **COMPLETED** milik sendiri. Satu item hanya bisa di-review satu kali.
+
+| Field         | Tipe           | Wajib | Keterangan                            |
+| ------------- | -------------- | :---: | ------------------------------------- |
+| `orderItemId` | string         |  ✅   | ID item dari order yang sudah selesai |
+| `rating`      | number (1–5)   |  ✅   | Rating bintang                        |
+| `comment`     | string         |   -   | Komentar/ulasan                       |
+| `foto`        | file (jpg/png) |   -   | Foto produk yang diterima             |
+
+**Contoh body:**
+
+```
+orderItemId   = item_cmp1abc2def3
+rating        = 5
+comment       = Kuenya cantik banget sesuai pesanan, rasanya enak!
+foto          = [file upload foto kue yang diterima]
+```
+
+**Response 201:**
 
 ```json
 {
-  "name": "Kue Lapis Legit Premium - Edisi Lebaran",
-  "basePrice": 160000,
-  "isFeatured": true,
-  "variants": [
+  "status": "success",
+  "data": {
+    "id": "rev_cmp1...",
+    "rating": 5,
+    "comment": "Kuenya cantik banget sesuai pesanan, rasanya enak!",
+    "foto": "https://res.cloudinary.com/...",
+    "orderItemId": "item_cmp1...",
+    "createdAt": "2026-07-19T05:00:00.000Z"
+  }
+}
+```
+
+---
+
+## 📊 DASHBOARD
+
+### 1. Best Seller Products
+
+**`GET /api/products/best-seller`** — Public
+
+Mendapatkan 5 produk terlaris berdasarkan total kuantitas terjual pada pesanan yang tidak dibatalkan/ditolak. Jika data pesanan kurang dari 5, server akan melengkapi sisanya dengan produk terbaru.
+
+**Response 200:**
+
+```json
+{
+  "status": "success",
+  "data": [
     {
-      "name": "Coklat",
-      "isBase": false,
-      "priceAdjust": 30000
-    }
-  ],
-  "sizes": [
-    {
-      "label": "Loyang 20cm",
-      "isBase": true,
-      "priceAdjust": 0,
-      "stock": 50
+      "id": "cmrrcj9b60001...",
+      "name": "Kue Ultah Cokelat",
+      "slug": "kue-ultah-cokelat",
+      "basePrice": 75000,
+      "category": "KECIL",
+      "stockType": "READY_STOCK",
+      "images": ["https://res.cloudinary.com/..."]
     }
   ]
 }
 ```
 
-> 💡 Ganti `:id` di URL dengan ID produk yang ingin diupdate, contoh:
-> `http://localhost:3000/api/products/cmoh6gusm0008ewu1eqkezcfs`
-
 ---
 
-### 6. Delete Product _(Admin only)_
+### 2. Newest Products
 
-- **Method:** `DELETE`
-- **URL:** `http://localhost:3000/api/products/:id`
-- **Authorization:** httpOnly Cookie **Admin** (otomatis)
-- **Body:** tidak diperlukan
+**`GET /api/products/newest`** — Public
 
-> 💡 Ganti `:id` di URL dengan ID produk yang ingin dihapus, contoh:
-> `http://localhost:3000/api/products/cmoh6gusm0008ewu1eqkezcfs`
+Mendapatkan 10 produk reguler paling baru ditambahkan oleh Admin.
 
----
-
-## 🗂️ Contoh Request Categories
-
-> 📌 **Ringkasan Akses:**
->
-> | Endpoint        | Admin | User |
-> | --------------- | :---: | :--: |
-> | Get All         |  ✅   |  ✅  |
-> | Get One by ID   |  ✅   |  ✅  |
-> | Create Category |  ✅   |  ❌  |
-> | Update Category |  ✅   |  ❌  |
-> | Delete Category |  ✅   |  ❌  |
-
----
-
-### 1. Get All Categories
-
-Endpoint ini untuk mengambil seluruh daftar kategori yang tersedia.
-
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/categories/`
-- **Authorization:** httpOnly Cookie (otomatis)
-- **Body:** tidak diperlukan
-
----
-
-### 2. Get One Category by ID
-
-Endpoint ini untuk mengambil detail satu kategori berdasarkan ID-nya.
-
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/categories/:id`
-- **Authorization:** httpOnly Cookie (otomatis)
-- **Body:** tidak diperlukan
-
-> 💡 Ganti `:id` dengan ID kategori yang ingin dilihat, contoh:
-> `http://localhost:3000/api/categories/cmoh6cmpm0000ewu1eles6m51`
-
----
-
-### 3. Create Category _(Admin only)_
-
-Endpoint ini untuk membuat kategori baru.
-
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/categories/`
-- **Authorization:** httpOnly Cookie **Admin** (otomatis)
-- **Body (JSON):**
+**Response 200:**
 
 ```json
 {
-  "name": "Kue Lapis Legit minimum",
-  "slug": "kue-lapis-legit-minimum"
+  "status": "success",
+  "data": [
+    {
+      "id": "cmrrcj9b60001...",
+      "name": "Kue Baru",
+      "slug": "kue-baru",
+      "basePrice": 80000,
+      "category": "KECIL",
+      "stockType": "READY_STOCK",
+      "images": ["https://res.cloudinary.com/..."]
+    }
+  ]
 }
 ```
 
 ---
 
-### 4. Update Category _(Admin only)_
+### 3. Products by Category
 
-Endpoint ini untuk memperbarui data kategori yang sudah ada.
+**`GET /api/products/category/:category`** — Public
 
-- **Method:** `PUT`
-- **URL:** `http://localhost:3000/api/categories/:id`
-- **Authorization:** httpOnly Cookie **Admin** (otomatis)
-- **Body (JSON):**
+Mendapatkan seluruh produk dengan kategori tertentu (case-insensitive).
 
-```json
-{
-  "name": "update_categories",
-  "slug": "update_categories"
-}
-```
-
-> 💡 Ganti `:id` dengan ID kategori yang ingin diupdate, contoh:
-> `http://localhost:3000/api/categories/cmoh6cmpm0000ewu1eles6m51`
-
----
-
-### 5. Delete Category _(Admin only)_
-
-Endpoint ini untuk menghapus kategori berdasarkan ID-nya.
-
-- **Method:** `DELETE`
-- **URL:** `http://localhost:3000/api/categories/:id`
-- **Authorization:** httpOnly Cookie **Admin** (otomatis)
-- **Body:** tidak diperlukan
-
-> 💡 Ganti `:id` dengan ID kategori yang ingin dihapus, contoh:
-> `http://localhost:3000/api/categories/cmoh6cmpm0000ewu1eles6m51`
-
----
-
-## 🛒 Contoh Request Cart
-
-> 📌 **Catatan:** Semua endpoint cart hanya bisa diakses oleh **User yang sedang login**. Setiap user hanya bisa melihat dan mengelola cart milik mereka sendiri.
-
----
-
-### 1. Get Cart (Lihat Isi Keranjang)
-
-Endpoint ini untuk mengambil semua item yang ada di keranjang belanja milik user yang sedang login.
-
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/cart/`
-- **Authorization:** httpOnly Cookie **User** (otomatis)
-- **Body:** tidak diperlukan
-
----
-
-### 2. Add Item to Cart (Tambah ke Keranjang)
-
-Endpoint ini untuk menambahkan produk ke dalam keranjang belanja. Gunakan path URL yang sama dengan Get Cart, bedanya hanya di HTTP method-nya.
-
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/cart/`
-- **Authorization:** httpOnly Cookie **User** (otomatis)
-- **Body (JSON):**
+**Response 200:**
 
 ```json
 {
-  "productId": "cmoh6gusm0008ewu1eqkezcfs",
-  "variantId": "cmoh6gusm0009ewu1eqkezcfs",
-  "sizeId": "cmoh6gusm0010ewu1eqkezcfs",
-  "quantity": 2
-}
-```
-
-> 💡 Sesuaikan `productId`, `variantId`, dan `sizeId` dengan ID yang ada di database. Kamu bisa dapatkan ID ini dari response endpoint **Get All Products**.
-
----
-
-### 3. Delete Cart Item (Hapus Item dari Keranjang)
-
-Endpoint ini untuk menghapus satu item tertentu dari keranjang belanja berdasarkan ID cart item-nya.
-
-- **Method:** `DELETE`
-- **URL:** `http://localhost:3000/api/cart/:id`
-- **Authorization:** httpOnly Cookie **User** (otomatis)
-- **Body:** tidak diperlukan
-
-> 💡 Ganti `:id` dengan ID cart item yang ingin dihapus, contoh:
-> `http://localhost:3000/api/cart/cmohaewyf0000vku1hpykiw2s`
->
-> ID cart item bisa diperoleh dari response endpoint **Get Cart** di atas.
-
----
-
-## 📦 Contoh Request Order
-
-> 📌 **Ringkasan Akses:**
->
-> | Endpoint                   | Admin | User |
-> | -------------------------- | :---: | :--: |
-> | My Orders (per user)       |  ❌   |  ✅  |
-> | All Orders (semua orderan) |  ✅   |  ❌  |
-> | Checkout                   |  ❌   |  ✅  |
-> | Update Status Order        |  ✅   |  ❌  |
-
----
-
-### 1. My Orders (Riwayat Pesanan User)
-
-Endpoint ini untuk mengambil semua pesanan milik user yang sedang login.
-
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/order/my-orders`
-- **Authorization:** httpOnly Cookie **User** (otomatis)
-- **Body:** tidak diperlukan
-
----
-
-### 2. All Orders — Admin (Semua Pesanan)
-
-Endpoint ini untuk mengambil seluruh pesanan dari semua user. Hanya bisa diakses oleh Admin.
-
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/order/admin/all`
-- **Authorization:** httpOnly Cookie **Admin** (otomatis)
-- **Body:** tidak diperlukan
-
----
-
-### 3. Checkout
-
-Endpoint ini untuk membuat pesanan baru. Mendukung **2 cara checkout**:
-
-#### a) Checkout dari Cart
-
-Checkout berdasarkan item yang sudah ada di keranjang belanja.
-
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/order/checkout`
-- **Authorization:** httpOnly Cookie **User** (otomatis)
-- **Body (JSON):**
-
-```json
-{
-  "source": "cart",
-  "cartItemIds": ["cmohaewyf0000vku1hpykiw2s", "cmohaewyf0001vku1hpykiw2s"],
-  "shippingAddress": "Jl. Merdeka No. 10, Purwokerto",
-  "notes": "Tolong dikemas dengan rapi"
-}
-```
-
-> 💡 `cartItemIds` diisi dengan ID item yang ada di cart (didapat dari response **Get Cart**). Hanya item yang dipilih saja yang akan di-checkout.
-
-#### b) Checkout Direct (Langsung)
-
-Checkout langsung tanpa melalui cart — cocok untuk pembelian cepat satu produk.
-
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/order/checkout`
-- **Authorization:** httpOnly Cookie **User** (otomatis)
-- **Body (JSON):**
-
-```json
-{
-  "source": "direct",
-  "productId": "cmoh6gusm0008ewu1eqkezcfs",
-  "variantId": "cmoh6gusm0009ewu1eqkezcfs",
-  "sizeId": "cmoh6gusm0010ewu1eqkezcfs",
-  "quantity": 1,
-  "shippingAddress": "Jl. Merdeka No. 10, Purwokerto",
-  "notes": "Tanpa lilin ya"
+  "status": "success",
+  "data": [
+    {
+      "id": "cmrrcj9b60001...",
+      "name": "Kue Kecil Cantik",
+      "category": "KECIL"
+    }
+  ]
 }
 ```
 
 ---
 
-### 4. Update Status Pesanan — Admin
+### 4. Owner Dashboard
 
-Endpoint ini untuk memperbarui status pesanan tertentu. Hanya bisa diakses oleh Admin.
+**`GET /api/dashboard/owner`** — Owner Only (httpOnly Cookie `tokenAdmin` dengan role `OWNER`)
 
-- **Method:** `PUT`
-- **URL:** `http://localhost:3000/api/order/admin/:id/status`
-- **Authorization:** httpOnly Cookie **Admin** (otomatis)
-- **Body (JSON):**
+Mendapatkan data laporan lengkap untuk Owner, terdiri dari grafik omset harian 30 hari terakhir, daftar pesanan aktif, dan semua order masuk dalam 30 hari terakhir.
+
+**Response 200:**
 
 ```json
 {
-  "status": "PROCESSING"
+  "status": "success",
+  "data": {
+    "omset": [
+      { "date": "2026-07-18", "total": 1200000 },
+      { "date": "2026-07-19", "total": 1850000 }
+    ],
+    "activeOrders": [
+      {
+        "id": "ord_123",
+        "orderNumber": "ORD-2026-001",
+        "status": "PROCESSING",
+        "totalAmount": 155000,
+        "user": { "name": "Siti Cholifah", "email": "siti@example.com" },
+        "items": [...]
+      }
+    ],
+    "orders30Days": [
+      {
+        "id": "ord_123",
+        "orderNumber": "ORD-2026-001",
+        "status": "PROCESSING",
+        "totalAmount": 155000,
+        "createdAt": "2026-07-19T05:00:00.000Z",
+        "user": { "name": "Siti Cholifah", "email": "siti@example.com" }
+      }
+    ]
+  }
 }
 ```
 
-> 💡 Ganti `:id` dengan ID order yang ingin diupdate statusnya, contoh:
-> `http://localhost:3000/api/order/admin/cmohbfebe0000xku1vuvqfoj1/status`
->
-> Nilai `status` yang umum digunakan:
->
-> | Status       | Keterangan                         |
-> | ------------ | ---------------------------------- |
-> | `PENDING`    | Pesanan baru masuk, belum diproses |
-> | `PROCESSING` | Pesanan sedang diproses / dibuat   |
-> | `SHIPPED`    | Pesanan sudah dikirim              |
-> | `DELIVERED`  | Pesanan sudah diterima             |
-> | `CANCELLED`  | Pesanan dibatalkan                 |
+---
+
+### 5. Admin Dashboard
+
+**`GET /api/dashboard/admin`** — Admin Only (httpOnly Cookie `tokenAdmin` dengan role `ADMIN`)
+
+Mendapatkan data pesanan aktif dan semua order masuk dalam 30 hari terakhir (tanpa menyertakan data omset).
+
+**Response 200:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "activeOrders": [
+      {
+        "id": "ord_123",
+        "orderNumber": "ORD-2026-001",
+        "status": "PROCESSING",
+        "totalAmount": 155000,
+        "user": { "name": "Siti Cholifah", "email": "siti@example.com" },
+        "items": [...]
+      }
+    ],
+    "orders30Days": [
+      {
+        "id": "ord_123",
+        "orderNumber": "ORD-2026-001",
+        "status": "PROCESSING",
+        "totalAmount": 155000,
+        "createdAt": "2026-07-19T05:00:00.000Z",
+        "user": { "name": "Siti Cholifah", "email": "siti@example.com" }
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 📊 Response Format Standar
+
+Semua endpoint mengikuti format response yang konsisten:
+
+**Sukses:**
+
+```json
+{
+  "status": "success",
+  "data": { ... },
+  "message": "Pesan opsional"
+}
+```
+
+**Error:**
+
+```json
+{
+  "status": "error",
+  "code": "VALIDATION_ERROR",
+  "message": "Ada data yang tidak sesuai. Periksa kembali isian kamu.",
+  "errors": {
+    "email": ["Format email tidak valid"],
+    "password": ["Password minimal 6 karakter"]
+  }
+}
+```
+
+**Kode Error Umum:**
+
+| HTTP | Code                    | Keterangan                  |
+| ---- | ----------------------- | --------------------------- |
+| 400  | `VALIDATION_ERROR`      | Input tidak valid           |
+| 401  | `UNAUTHORIZED`          | Belum login / token expired |
+| 403  | `FORBIDDEN`             | Tidak punya akses           |
+| 404  | `NOT_FOUND`             | Data tidak ditemukan        |
+| 409  | `CONFLICT_ERROR`        | Data sudah ada (duplikat)   |
+| 422  | `INVALID_REFERENCE`     | Referensi ID tidak valid    |
+| 500  | `INTERNAL_SERVER_ERROR` | Kesalahan server            |
+
+---
+
+## 🧪 Test Suite
+
+Jalankan seluruh integration test:
+
+```bash
+npm test
+```
+
+| Suite       | Use Cases                              |
+| ----------- | -------------------------------------- |
+| Auth        | UC-AUTH-01 s/d UC-AUTH-09 (9 skenario) |
+| Product     | UC-PROD-01 s/d UC-PROD-08 (8 skenario) |
+| Cart        | UC-CART-01 s/d UC-CART-06 (6 skenario) |
+| Custom Cake | UC-CC-01 s/d UC-CC-09 (9 skenario)     |
+| Order       | UC-ORD-01 s/d UC-ORD-15 (15 skenario)  |
+| Profile     | UC-PRF-01 s/d UC-PRF-04 (4 skenario)   |
+| Review      | UC-REV-01 s/d UC-REV-06 (6 skenario)   |
+| Dashboard   | UC-DSH-01 s/d UC-DSH-07 (7 skenario)   |
+| **Total**   | **59 skenario**                        |
 
 ---
 
 ## ❓ Troubleshooting
 
-| Masalah                          | Solusi                                                                             |
-| -------------------------------- | ---------------------------------------------------------------------------------- |
-| `Error: connect ECONNREFUSED`    | Pastikan PostgreSQL sudah berjalan dan `DATABASE_URL` sudah benar                  |
-| `Invalid API Key` (Cloudinary)   | Cek kembali nilai `CLOUDINARY_API_KEY` dan `CLOUDINARY_API_SECRET` di `.env`       |
-| `Prisma Client not generated`    | Jalankan `npx prisma generate` terlebih dahulu                                     |
-| Port sudah digunakan             | Ganti nilai `PORT` di `.env` ke port lain (misal `3001`)                           |
-| `401 Unauthorized` di Postman    | Pastikan sudah login dan cookie masih aktif (cek via Postman → Cookies)            |
-| `Cannot POST /api/auth/register` | Pastikan server sudah berjalan dengan `npm run dev`                                |
-| Response kosong / error 500      | Cek terminal server untuk melihat pesan error lengkap                              |
-| Cookie tidak terkirim di Postman | Pastikan **Cookie Jar** aktif di Postman — buka Cookies dan cek domain `localhost` |
+| Masalah                        | Solusi                                                         |
+| ------------------------------ | -------------------------------------------------------------- |
+| `connect ECONNREFUSED`         | Pastikan PostgreSQL berjalan dan `DATABASE_URL` benar          |
+| `Invalid API Key` (Cloudinary) | Cek `CLOUDINARY_API_KEY` dan `CLOUDINARY_API_SECRET` di `.env` |
+| `Prisma Client not generated`  | Jalankan `npx prisma generate`                                 |
+| Port sudah dipakai             | Ganti `PORT` di `.env` ke port lain (misal `3001`)             |
+| `401 Unauthorized` di Postman  | Pastikan sudah login dan cookie aktif                          |
+| Cookie tidak terkirim          | Pastikan **Cookie Jar** aktif di Postman                       |
+| Test timeout                   | Pastikan database bisa diakses, jalankan `npm test` ulang      |
 
 ---
 
-## 📁 Variabel Environment — Referensi Lengkap
+## 📁 Variabel Environment
 
-| Variable                | Keterangan                           | Contoh                                         |
-| ----------------------- | ------------------------------------ | ---------------------------------------------- |
-| `DATABASE_URL`          | Koneksi string PostgreSQL            | `postgresql://postgres:pass@localhost:5432/db` |
-| `PORT`                  | Port server Express                  | `3000`                                         |
-| `JWT_SECRET`            | Secret key JWT (generate via crypto) | `a3f1c2e4b9d7...`                              |
-| `CLOUDINARY_API_KEY`    | API Key dari Cloudinary              | `123456789012345`                              |
-| `CLOUDINARY_API_SECRET` | API Secret dari Cloudinary           | `abcDEFghiJKL...`                              |
-| `CLOUDINARY_NAME`       | Cloud Name dari Cloudinary           | `my-cloud-name`                                |
+| Variable                | Keterangan               | Contoh                                         |
+| ----------------------- | ------------------------ | ---------------------------------------------- |
+| `DATABASE_URL`          | Koneksi PostgreSQL       | `postgresql://postgres:pass@localhost:5432/db` |
+| `PORT`                  | Port server              | `3000`                                         |
+| `JWT_SECRET`            | Secret JWT (min 64 char) | `a3f1c2e4b9d7...`                              |
+| `CLOUDINARY_NAME`       | Cloud Name Cloudinary    | `my-cloud-name`                                |
+| `CLOUDINARY_API_KEY`    | API Key Cloudinary       | `123456789012345`                              |
+| `CLOUDINARY_API_SECRET` | API Secret Cloudinary    | `abcDEFghiJKL...`                              |
 
----
-
-> 💡 **Tip:** Jangan pernah commit file `.env` ke repository. Pastikan `.env` sudah ada di `.gitignore`.
+> 💡 Jangan pernah commit file `.env` ke repository. Pastikan `.env` ada di `.gitignore`.

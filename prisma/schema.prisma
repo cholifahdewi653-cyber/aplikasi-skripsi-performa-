@@ -12,31 +12,91 @@ datasource db {
   provider = "postgresql"
 }
 
-// --- ENUMS ---
-
+// ========================================
+// ENUMS
+// ========================================
 enum Role {
   ADMIN
   USER
+  OWNER
 }
 
-enum PricingType {
+enum JenisKelamin {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
+enum StockType {
+  READY_STOCK
+  PRE_ORDER
+}
+
+enum DiscountType {
+  PERCENTAGE
   FIXED
-  CUSTOM
+}
+
+enum CartItemType {
+  PRODUCT
+  CUSTOM_CAKE
 }
 
 enum OrderStatus {
   PENDING
-  ORDERED
-  PACKING
+  REJECTED
+  PROCESSING
   SHIPPED
+  ARRIVED
   COMPLETED
+  CANCELLED
   RETURNED
 }
 
-// --- MODELS ---
+enum RequestType {
+  CANCEL
+  RETURN
+}
 
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum ReturnReasonType {
+  CAKE_DAMAGED     // cake rusak saat diterima
+  ORDER_MISMATCH   // pesanan tidak sesuai
+  QUALITY_MISMATCH // rasa/kualitas tidak sesuai
+  OTHER            // lainnya
+}
+
+enum TrackingStatus {
+  PACKED     // paket dikemas
+  PICKED_UP  // diambil kurir
+  ON_THE_WAY // dalam perjalanan
+  NEARBY     // sudah dekat lokasi tujuan
+  ARRIVED    // sampai tujuan
+}
+
+enum PaymentMethod {
+  TRANSFER
+  COD
+  PICKUP
+}
+
+// ========================================
+// USER & PROFILE
+// ========================================
 model User {
   id        String   @id @default(cuid())
+  userName  String?  @unique
   email     String   @unique
   name      String
   password  String
@@ -44,175 +104,433 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relasi Profil
-  profile   Profile? // Relasi 1:1
+  profile   Profile?
 
-  // Relasi Transaksional
   orders    Order[]
   cartItems CartItem[]
   reviews   Review[]
 }
 
 model Profile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Data umum
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Data umum (semua role)
   phoneNumber String?
-  avatar      String?  // URL foto
-  avatarId    String?  // public_id Cloudinary untuk delete
+  avatar      String?
+  avatarId    String?
 
-  // Field Spesifik User (Bisa dikosongkan jika Admin)
-  address     String?  @db.Text
-  city        String?
-  postalCode  String?
+  // Khusus USER
+  jenisKelamin JenisKelamin?
+  address      String?       @db.Text
+  city         String?
+  postalCode   String?
 
-  // Field Spesifik Admin (Bisa dikosongkan jika User)
-  adminNotes  String?  // Catatan internal untuk admin
-  department  String?  // Bagian/Departemen admin
+  // Khusus ADMIN & OWNER
+  adminNotes String?
+  department String?
 
-  updatedAt   DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 }
 
-model Category {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  slug      String    @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-}
-
+// ========================================
+// PRODUCT (REGULAR)
+// ========================================
 model Product {
-  id          String      @id @default(cuid())
+  id          String @id @default(cuid())
   name        String
-  slug        String      @unique
+  slug        String @unique
   images      String[]
   imageIds    String[]
   description String
-  pricingType PricingType @default(FIXED)
-  basePrice   Int
-  isPublished Boolean     @default(true)
-  isFeatured  Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  category    String
 
-  // Relasi
-  categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id])
-  variants    Variants[]
-  sizes       Size[]
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
-  reviews     Review[]
+  basePrice Int
+
+  hasDiscount   Boolean       @default(false)
+  discountType  DiscountType?
+  discountValue Int?
+
+  variants String[]
+
+  stockType   StockType @default(READY_STOCK)
+  isPublished Boolean   @default(true)
+  isFeatured  Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sizes      ProductSize[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  reviews    Review[]
+
+  @@index([category])
+  @@index([isPublished])
 }
 
-model Variants {
-  id          String   @id @default(cuid())
-  productId   String
-  Product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+model ProductSize {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  price     Int
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productId])
+}
+
+// ========================================
+// CUSTOM CAKE — MASTER OPTION TABLES
+// ========================================
+model BaseCake {
+  id          String       @id @default(cuid())
   name        String
-  isBase      Boolean  @default(false)
-  priceAdjust Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  price       Int
+  status      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  customCakes CustomCake[]
+}
+
+model TipeCream {
+  id          String       @id @default(cuid())
+  name        String
+  price       Int
+  status      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  customCakes CustomCake[]
+}
+
+model WarnaCream {
+  id          String       @id @default(cuid())
+  name        String
+  warna       String
+  hex         String       @unique
+  price       Int
+  status      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  customCakes CustomCake[]
+}
+
+model Layer {
+  id         String            @id @default(cuid())
+  name       String
+  price      Int
+  status     Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  cakeLayers CustomCakeLayer[]
 }
 
 model Size {
-  id          String   @id @default(cuid())
-  productId   String
-  Product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  label       String
-  isBase      Boolean  @default(false)
-  priceAdjust Int      @default(0)
-  stock       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String            @id @default(cuid())
+  name       String
+  price      Int
+  status     Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  cakeLayers CustomCakeLayer[]
 }
 
-model CartItem {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-  quantity  Int      @default(1)
-  
-  // Pilihan varian/size saat di keranjang
-  variantId String?
-  sizeId    String?
+model Topping {
+  id           String              @id @default(cuid())
+  name         String
+  price        Int
+  status       Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  cakeToppings CustomCakeTopping[]
+}
+
+model Lilin {
+  id          String       @id @default(cuid())
+  name        String
+  price       Int
+  status      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  customCakes CustomCake[]
+}
+
+model Topper {
+  id          String       @id @default(cuid())
+  name        String
+  price       Int
+  status      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  customCakes CustomCake[]
+}
+
+// ========================================
+// CUSTOM CAKE — KONFIGURASI (per order/cart)
+// ========================================
+model CustomCake {
+  id String @id @default(cuid())
+
+  baseCakeId String
+  baseCake   BaseCake @relation(fields: [baseCakeId], references: [id])
+
+  tipeCreamId String
+  tipeCream   TipeCream @relation(fields: [tipeCreamId], references: [id])
+
+  warnaCreamId String
+  warnaCream   WarnaCream @relation(fields: [warnaCreamId], references: [id])
+
+  topperId String?
+  topper   Topper? @relation(fields: [topperId], references: [id])
+
+  lilinId String?
+  lilin   Lilin? @relation(fields: [lilinId], references: [id])
+
+  layers   CustomCakeLayer[]
+  toppings CustomCakeTopping[]
+
+  ucapan            String?
+  catatan           String? @db.Text
+  dekorasiLainnya   String?
+  lilinAngkaGoldQty Int     @default(0) // @4000/pcs
+
+  foto         String? // URL gambar/foto referensi
+  fotoPublicId String? // public_id cloudinary
+
+  totalPrice Int // snapshot, dihitung di service saat create
+
+  cartItem  CartItem?
+  orderItem OrderItem?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+model CustomCakeLayer {
+  id           String     @id @default(cuid())
+  customCakeId String
+  customCake   CustomCake @relation(fields: [customCakeId], references: [id], onDelete: Cascade)
+
+  layerId String
+  layer   Layer @relation(fields: [layerId], references: [id])
+
+  sizeId String
+  size   Size @relation(fields: [sizeId], references: [id])
+
+  position Int // urutan dari bawah (1) ke atas
+
+  @@index([customCakeId])
+}
+
+model CustomCakeTopping {
+  id           String     @id @default(cuid())
+  customCakeId String
+  customCake   CustomCake @relation(fields: [customCakeId], references: [id], onDelete: Cascade)
+
+  toppingId String
+  topping   Topping @relation(fields: [toppingId], references: [id])
+
+  qty Int @default(1)
+
+  @@index([customCakeId])
+}
+
+// ========================================
+// CART
+// ========================================
+model CartItem {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type CartItemType
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  productSizeId String?
+  productSize   ProductSize? @relation(fields: [productSizeId], references: [id])
+
+  customCakeId String?     @unique
+  customCake   CustomCake? @relation(fields: [customCakeId], references: [id], onDelete: Cascade)
+
+  rasa String? // snapshot varian rasa untuk produk reguler
+
+  qty Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ========================================
+// ORDER / CHECKOUT
+// ========================================
 model Order {
-  id              String      @id @default(cuid())
-  orderNumber     String      @unique
-  userId          String
-  user            User        @relation(fields: [userId], references: [id])
-  
-  totalAmount     Int
-  status          OrderStatus @default(PENDING)
-  
-  // Tracking & Pengiriman
-  shippingAddress String
-  courierName     String?
-  trackingNumber  String?
-  
-  items           OrderItem[]
-  logs            OrderLog[]
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id          String @id @default(cuid())
+  orderNumber String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
+
+  // data snapshot pengiriman
+  recipientName String
+  phoneNumber   String
+  address       String  @db.Text
+  city          String
+  postalCode    String
+  notes         String? @db.Text
+
+  // checkout fields (PRD Task 6)
+  deliveryDate  DateTime?
+  paymentMethod PaymentMethod @default(TRANSFER)
+  bank          String?       // wajib jika paymentMethod = TRANSFER
+
+  subtotal     Int
+  adminFee     Int @default(0) // Rp 2.500 jika TRANSFER, else 0
+  shippingCost Int @default(0)
+  totalAmount  Int
+
+  // Task 7 & 9 tracking fields
+  expedition        String?
+  resi              String?
+  proofOfDelivery   String? // URL bukti sampai
+  proofOfDeliveryId String? // Cloudinary public_id
+  rejectReason      String? // Alasan penolakan pesanan oleh admin
+
+  // Task 8 cancellation request counter
+  cancelRequestCount Int @default(0)
+
+  items              OrderItem[]
+  requests            OrderRequest[]
+  trackings           OrderTracking[]
+  paymentSubmissions  PaymentSubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  
-  name      String  // Snapshot nama saat dibeli
-  quantity  Int
-  price     Int     // Snapshot harga saat dibeli
-  
-  variantName String?
-  sizeLabel   String?
-  
-  // Relasi ke Review (Satu item pesanan hanya bisa 1x review)
-  review      Review?
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  type CartItemType
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  productSizeId String?
+  productSize   ProductSize? @relation(fields: [productSizeId], references: [id])
+
+  customCakeId String?     @unique
+  customCake   CustomCake? @relation(fields: [customCakeId], references: [id])
+
+  // snapshot — nama & harga dibekukan saat checkout
+  nameSnapshot  String
+  priceSnapshot Int
+  qty           Int    @default(1)
+
+  review Review?
+
+  @@index([orderId])
 }
 
-model OrderLog {
-  id        String      @id @default(cuid())
-  orderId   String
-  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  status    OrderStatus
-  note      String?     
-  
-  // Mencatat admin yang mengubah status (opsional)
-  adminId   String?     
+model OrderRequest {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime    @default(now())
+  type RequestType // CANCEL | RETURN
+
+  // khusus RETURN
+  reasonType  ReturnReasonType?
+  reasonNote  String?           @db.Text // wajib diisi kalau reasonType = OTHER, opsional selainnya
+  proofImages String[] // bukti foto kondisi cake
+  proofIds    String[]
+
+  // khusus CANCEL
+  cancelReason String? @db.Text // alasan bebas, gak perlu fixed option
+
+  status      RequestStatus @default(PENDING)
+  adminNote   String?       @db.Text
+  processedBy String?
+  processedAt DateTime?
+
+  // Task 7 refund/cancel completion fields
+  settlementType String? // "REFUND" | "GANTI_PRODUK"
+  refundStatus   String? // "PENDING" | "COMPLETED" | "REJECTED"
+  refundType     String? // e.g. "BCA", "E-WALLET"
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
 }
 
+model PaymentSubmission {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  paymentMethod String // "Transfer BCA", "QRIS", dll
+  proofUrl      String
+  proofId       String? // public_id cloudinary
+
+  status PaymentStatus @default(UNPAID) // UNPAID = nunggu diverifikasi admin
+
+  rejectedNote String? @db.Text // alasan admin kalau bukti ditolak
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model OrderTracking {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  status   TrackingStatus
+  location String? // opsional, misal "Gudang Purwokerto", "Kurir menuju lokasi"
+  note     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+}
+
+// ========================================
+// REVIEW
+// ========================================
 model Review {
-  id          String    @id @default(cuid())
-  rating      Int       // 1-5
-  comment     String?
-  
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
+  id             String  @id @default(cuid())
+  rating         Int // 1-5
+  comment        String?
+  foto_url       String? // URL gambar upload ke Cloudinary
+  foto_public_id String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   orderItemId String    @unique
   orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

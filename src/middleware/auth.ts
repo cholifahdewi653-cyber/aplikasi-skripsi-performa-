@@ -7,7 +7,7 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error("JWT_SECRET tidak ditemukan");
 
-const roleSchema = z.enum(["ADMIN", "USER"]);
+const roleSchema = z.enum(["ADMIN", "USER", "OWNER"]);
 type Role = z.infer<typeof roleSchema>;
 
 const tokenPayloadSchema = z.object({
@@ -26,8 +26,8 @@ export const authMiddleware =
     try {
       let token: string | undefined;
 
-      //   jika dia admin
-      if (roles.includes("ADMIN") && req.cookies?.tokenAdmin) {
+      //   jika dia admin atau owner
+      if ((roles.includes("ADMIN") || roles.includes("OWNER")) && req.cookies?.tokenAdmin) {
         token = req.cookies.tokenAdmin;
       }
 

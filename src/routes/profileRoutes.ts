@@ -1,11 +1,15 @@
 import express from "express";
 import { authMiddleware } from "../middleware/auth";
-import { getMe } from "../controllers/authControllers";
 import { updateMyProfile } from "../controllers/profileControllers";
+import { upload } from "../lib/multer";
 
 const router = express.Router();
 
-router.get("/me", authMiddleware(["ADMIN", "USER"]), getMe);
-router.put("/update-profile", authMiddleware(["ADMIN", "USER"]), updateMyProfile);
+router.patch(
+  "/update-profile",
+  authMiddleware(["ADMIN", "USER"]),
+  upload.single("avatar"),
+  updateMyProfile,
+);
 
 export default router;

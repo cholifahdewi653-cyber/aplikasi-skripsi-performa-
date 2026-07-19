@@ -1,10 +1,18 @@
 import { z } from "zod";
 
 export const addToCartSchema = z.object({
-  productId: z.string().cuid({ message: "productId tidak valid" }),
-  quantity: z.number().int().min(1, "quantity minimal 1").default(1),
-  variantId: z.string().cuid({ message: "variantId tidak valid" }).optional(),
-  sizeId: z.string().cuid({ message: "sizeId tidak valid" }).optional(),
+  type: z.enum(["PRODUCT", "CUSTOM_CAKE"]),
+  productId: z.string().cuid({ message: "productId tidak valid" }).optional(),
+  productSizeId: z
+    .string()
+    .cuid({ message: "productSizeId tidak valid" })
+    .optional(),
+  customCakeId: z
+    .string()
+    .cuid({ message: "customCakeId tidak valid" })
+    .optional(),
+  rasa: z.string().optional(), // snapshot varian rasa untuk produk reguler
+  qty: z.number().int().min(1, "quantity minimal 1").default(1),
 });
 
 export const deleteCartItemSchema = z.object({

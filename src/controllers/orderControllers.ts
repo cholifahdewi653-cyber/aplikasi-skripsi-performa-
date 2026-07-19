@@ -1,375 +1,206 @@
 import { Request, Response } from "express";
-import { prisma } from "../lib/prisma";
-
+import { AuthError, ValidationError } from "../error/error";
 import {
   createOrderSchema,
   updateOrderStatusSchema,
+  verifyOrderSchema,
+  shipOrderSchema,
+  resolveCancelSchema,
+  editPaymentSchema,
+  requestCancelSchema,
 } from "../schema/orderSchema";
-import { ZodError } from "zod";
+import {
+  createOrderService,
+  getAllOrdersService,
+  getMyOrdersService,
+  updateOrderStatusService,
+  verifyOrderService,
+  shipOrderService,
+  proofDeliveryService,
+  confirmArrivalService,
+  resolveCancelService,
+  uploadPaymentProofService,
+  editPaymentService,
+  requestCancelService,
+  reorderService,
+  getOrderDetailService,
+} from "../service/orderService";
+import { wrap } from "../utils/helper/wrap.helpers";
+import { validate } from "../utils/helper/validate.helpers";
 
-// ======================================
-// USER CHECKOUT -> CART MENJADI ORDER
-// ======================================
-export const createOrder = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
+// ─── USER CHECKOUT ────────────────────────────────────────────────────────────
+export const createOrder = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-    const userId = req.user.id;
-    const body = createOrderSchema.parse(req.body);
+  const body = validate(createOrderSchema, req.body);
+  const order = await createOrderService(req.user.id, body);
 
-    // ===============================
-    // ADDRESS FINAL
-    // ===============================
-    const profile = await prisma.profile.findUnique({
-      where: { userId },
-      select: {
-        address: true,
-        city: true,
-        postalCode: true,
-      },
-    });
+  res.status(201).json({ success: true, message: "Checkout berhasil", data: order });
+});
 
-    const finalAddress =
-      body.shippingAddress ||
-      (profile?.address
-        ? `${profile.address}, ${profile.city ?? ""}, ${profile.postalCode ?? ""}`
-        : null);
+// ─── USER LIHAT ORDER SENDIRI ─────────────────────────────────────────────────
+export const getMyOrders = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-    if (!finalAddress) {
-      return res.status(400).json({
-        success: false,
-        message: "Alamat pengiriman wajib diisi",
-      });
-    }
+  const data = await getMyOrdersService(req.user.id);
+  res.status(200).json({ success: true, data });
+});
 
-    // ===============================
-    // MODE CART / DIRECT
-    // ===============================
-    let checkoutItems: {
-      productId: string;
-      quantity: number;
-      variantId?: string | null;
-      sizeId?: string | null;
-    }[] = [];
+// ─── ADMIN LIHAT SEMUA ORDER ──────────────────────────────────────────────────
+export const getAllOrders = wrap(async (_req: Request, res: Response) => {
+  const data = await getAllOrdersService();
+  res.status(200).json({ success: true, data });
+});
 
-    let deleteCartIds: string[] = [];
+// ─── ADMIN UPDATE STATUS ORDER ────────────────────────────────────────────────
+export const updateOrderStatus = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-    // MODE 1 = CART
-    if (body.cartItemIds?.length) {
-      const cartItems = await prisma.cartItem.findMany({
-        where: {
-          id: { in: body.cartItemIds },
-          userId,
-        },
-      });
+  const { id } = req.params as { id: string };
+  const body = validate(updateOrderStatusSchema, req.body);
+  const data = await updateOrderStatusService(id, req.user.id, body);
 
-      if (!cartItems.length) {
-        return res.status(400).json({
-          success: false,
-          message: "Cart item tidak ditemukan",
-        });
-      }
+  res.status(200).json({ success: true, message: "Status order berhasil diupdate", data });
+});
 
-      checkoutItems = cartItems.map((item) => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        variantId: item.variantId,
-        sizeId: item.sizeId,
-      }));
+// ─── TASK 7: ADMIN — Verify Order ─────────────────────────────────────────────
+export const verifyOrder = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-      deleteCartIds = cartItems.map((item) => item.id);
-    }
+  const { id } = req.params as { id: string };
+  const body = validate(verifyOrderSchema, req.body);
+  const data = await verifyOrderService(id, req.user.id, body);
 
-    // MODE 2 = DIRECT CHECKOUT
-    else if (body.items?.length) {
-      checkoutItems = body.items;
-    }
+  res.status(200).json({
+    success: true,
+    message: body.action === "APPROVE" ? "Pesanan disetujui" : "Pesanan ditolak",
+    data,
+  });
+});
 
-    // tidak ada input
-    else {
-      return res.status(400).json({
-        success: false,
-        message: "Pilih cartItemIds atau items",
-      });
-    }
+// ─── TASK 7: ADMIN — Ship Order ───────────────────────────────────────────────
+export const shipOrder = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-    // ===============================
-    // HITUNG TOTAL + VALIDASI
-    // ===============================
-    let totalAmount = 0;
+  const { id } = req.params as { id: string };
+  const body = validate(shipOrderSchema, req.body);
+  const data = await shipOrderService(id, req.user.id, body);
 
-    const finalItems: {
-      productId: string;
-      name: string;
-      quantity: number;
-      price: number;
-    }[] = [];
+  res.status(200).json({
+    success: true,
+    message: "Pesanan berhasil dikirim",
+    data,
+  });
+});
 
-    for (const item of checkoutItems) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId },
-      });
+// ─── TASK 7: ADMIN — Upload Delivery Proof (Bukti Sampai) ──────────────────────
+export const proofDelivery = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
+  if (!req.file) throw new ValidationError({ foto: ["File bukti sampai wajib diunggah"] });
 
-      if (!product || !product.isPublished) {
-        return res.status(400).json({
-          success: false,
-          message: "Produk tidak valid",
-        });
-      }
+  const { id } = req.params as { id: string };
+  const data = await proofDeliveryService(id, req.user.id, req.file.buffer);
 
-      const [variant, size] = await Promise.all([
-        item.variantId
-          ? prisma.variants.findUnique({
-              where: { id: item.variantId },
-            })
-          : null,
+  res.status(200).json({
+    success: true,
+    message: "Bukti pengiriman berhasil diunggah",
+    data,
+  });
+});
 
-        item.sizeId
-          ? prisma.size.findUnique({
-              where: { id: item.sizeId },
-            })
-          : null,
-      ]);
+// ─── TASK 7: ADMIN — Confirm Arrival ──────────────────────────────────────────
+export const confirmArrival = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-      if (size && size.stock < item.quantity) {
-        return res.status(400).json({
-          success: false,
-          message: `Stok size ${size.label} tidak cukup`,
-        });
-      }
+  const { id } = req.params as { id: string };
+  const data = await confirmArrivalService(id, req.user.id);
 
-      const finalPrice =
-        product.basePrice +
-        (variant?.priceAdjust ?? 0) +
-        (size?.priceAdjust ?? 0);
+  res.status(200).json({
+    success: true,
+    message: "Pesanan berhasil diselesaikan",
+    data,
+  });
+});
 
-      const subtotal = finalPrice * item.quantity;
+// ─── TASK 7: ADMIN — Resolve Cancellation Request ─────────────────────────────
+export const resolveCancel = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-      totalAmount += subtotal;
+  const { requestId } = req.params as { requestId: string };
+  const body = validate(resolveCancelSchema, req.body);
+  const data = await resolveCancelService(requestId, req.user.id, body);
 
-      finalItems.push({
-        productId: item.productId,
-        name: product.name,
-        quantity: item.quantity,
-        price: finalPrice,
-      });
-    }
+  res.status(200).json({
+    success: true,
+    message: data.requestStatus === "ACCEPTED" ? "Pembatalan disetujui" : "Pembatalan ditolak",
+    data: data.order,
+  });
+});
 
-    // ===============================
-    // TRANSACTION
-    // ===============================
-    const order = await prisma.$transaction(async (tx) => {
-      const createdOrder = await tx.order.create({
-        data: {
-          userId,
-          orderNumber: `ORD-${Date.now()}`,
-          shippingAddress: finalAddress,
-          totalAmount,
-          status: "PENDING",
+// ─── TASK 8: USER — Upload Payment Proof ──────────────────────────────────────
+export const uploadPaymentProof = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
+  if (!req.file) throw new ValidationError({ bukti: ["Bukti transfer wajib diunggah"] });
 
-          items: {
-            create: finalItems,
-          },
+  const { id } = req.params as { id: string };
+  const data = await uploadPaymentProofService(id, req.user.id, req.file.buffer);
 
-          logs: {
-            create: {
-              status: "PENDING",
-              note: "Order dibuat oleh user",
-            },
-          },
-        },
-        include: {
-          items: true,
-          logs: true,
-        },
-      });
+  res.status(201).json({
+    success: true,
+    message: "Bukti transfer berhasil diunggah",
+    data,
+  });
+});
 
-      // kurangi stok
-      for (const item of checkoutItems) {
-        if (item.sizeId) {
-          await tx.size.update({
-            where: { id: item.sizeId },
-            data: {
-              stock: {
-                decrement: item.quantity,
-              },
-            },
-          });
-        }
-      }
+// ─── TASK 8: USER — Edit Payment ──────────────────────────────────────────────
+export const editPayment = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-      // hapus cart jika mode cart
-      if (deleteCartIds.length) {
-        await tx.cartItem.deleteMany({
-          where: {
-            id: { in: deleteCartIds },
-            userId,
-          },
-        });
-      }
+  const { id } = req.params as { id: string };
+  const body = validate(editPaymentSchema, req.body);
+  const data = await editPaymentService(id, req.user.id, body);
 
-      return createdOrder;
-    });
+  res.status(200).json({
+    success: true,
+    message: "Detail pembayaran berhasil diubah",
+    data,
+  });
+});
 
-    return res.status(201).json({
-      success: true,
-      message: "Checkout berhasil",
-      data: order,
-    });
-  } catch (error: unknown) {
-    console.error(error);
+// ─── TASK 8: USER — Request Cancel Order ──────────────────────────────────────
+export const requestCancel = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-    if (error instanceof ZodError) {
-      return res.status(422).json({
-        success: false,
-        message: "Validasi gagal",
-        errors: error.issues,
-      });
-    }
+  const { id } = req.params as { id: string };
+  const body = validate(requestCancelSchema, req.body);
+  const data = await requestCancelService(id, req.user.id, body);
 
-    if (error instanceof Error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
-    }
+  res.status(201).json({
+    success: true,
+    message: "Pengajuan pembatalan berhasil dikirim",
+    data,
+  });
+});
 
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-// ======================================
-// USER LIHAT ORDER SENDIRI
-// ======================================
-export const getMyOrders = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
+// ─── TASK 8: USER — Beli Lagi (Reorder) ───────────────────────────────────────
+export const reorder = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-    const userId = req.user.id;
+  const { id } = req.params as { id: string };
+  const data = await reorderService(id, req.user.id);
 
-    const orders = await prisma.order.findMany({
-      where: { userId },
-      include: {
-        items: true,
-        logs: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+  res.status(200).json({
+    success: true,
+    message: data.message,
+  });
+});
 
-    return res.json({
-      success: true,
-      data: orders,
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+export const getOrderDetail = wrap(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthError();
 
-// ======================================
-// ADMIN LIHAT SEMUA ORDER
-// ======================================
-export const getAllOrders = async (req: Request, res: Response) => {
-  try {
-    const orders = await prisma.order.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        items: true,
-        logs: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+  const { id } = req.params as { id: string };
+  const data = await getOrderDetailService(id, req.user.id, req.user.role);
 
-    return res.json({
-      success: true,
-      data: orders,
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+  res.status(200).json({ success: true, data });
+});
 
-// ======================================
-// ADMIN UPDATE STATUS ORDER
-// ======================================
-export const updateOrderStatus = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params as { id: string };
-
-    const body = updateOrderStatusSchema.parse(req.body);
-
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
-
-    const checkOrder = await prisma.order.findUnique({
-      where: { id },
-    });
-
-    if (!checkOrder) {
-      return res.status(404).json({
-        success: false,
-        message: "Order tidak ditemukan",
-      });
-    }
-
-    const updated = await prisma.order.update({
-      where: { id },
-      data: {
-        status: body.status,
-
-        logs: {
-          create: {
-            status: body.status,
-            note: body.note,
-            adminId: req.user.id,
-          },
-        },
-      },
-      include: {
-        logs: true,
-      },
-    });
-
-    return res.json({
-      success: true,
-      message: "Status order berhasil diupdate",
-      data: updated,
-    });
-  } catch (error: any) {
-    return res.status(400).json({
-      success: false,
-      message: error.errors || error.message,
-    });
-  }
-};

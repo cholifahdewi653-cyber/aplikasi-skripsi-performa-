@@ -6,10 +6,16 @@ import "dotenv/config";
 // Routes
 import authRoutes from "./src/routes/authRoutes";
 import productRoutes from "./src/routes/productRoutes";
-import categoryRoutes from "./src/routes/categoryRoutes";
+import customCakeRoutes from "./src/routes/customCakeRoutes";
 import profileRoutes from "./src/routes/profileRoutes";
 import cartRoutes from "./src/routes/cartRoutes";
 import orderRoutes from "./src/routes/orderRoutes";
+import reviewRoutes from "./src/routes/reviewRoutes";
+import dashboardRoutes from "./src/routes/dashboardRoutes";
+
+
+// Global error handler
+import { errorHandler } from "./src/error/errorHandle";
 
 const app = express();
 const port = process.env.PORT;
@@ -21,10 +27,16 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
-app.use("/api/categories", categoryRoutes);
+app.use("/api/custom-cakes", customCakeRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/order", orderRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+
+
+// ─── Global Error Handler (harus paling akhir) ────────────────────────────────
+app.use(errorHandler);
 
 async function startServer() {
   try {
@@ -39,4 +51,8 @@ async function startServer() {
   }
 }
 
-startServer();
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}
+
+export default app;
